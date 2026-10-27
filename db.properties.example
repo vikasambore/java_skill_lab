@@ -1,0 +1,4 @@
+db.url=jdbc:mysql://localhost:3306/emergency_kit?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata
+db.user=root
+db.password=CHANGE_ME
+stale.days=180
