@@ -10,8 +10,12 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+// Parses bulk emergency contact entries from CSV files into objects.
+// Used by RecordService to batch import emergency contacts into the database.
 public class CsvImporter {
 
+    // Encapsulates a parsed contact object along with its source line number.
+    // Used within CsvImporter and RecordService for line-specific validation reporting.
     public static class ParsedRow {
         public int lineNumber;
         public EmergencyContact contact;

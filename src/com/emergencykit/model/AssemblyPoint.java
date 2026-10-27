@@ -2,6 +2,8 @@ package com.emergencykit.model;
 
 import java.time.LocalDate;
 
+// Represents designated emergency gathering locations and directions.
+// Used in RecordService and Main for displaying and managing assembly records.
 public class AssemblyPoint extends EmergencyRecord {
 
     private String locationDescription;

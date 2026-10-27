@@ -1,5 +1,7 @@
 package com.emergencykit.model;
 
+// Holds a single line item with sequence order inside a checklist.
+// Used by Checklist and RecordDAOImpl for displaying and storing steps.
 public class ChecklistItem {
 
     private int id;

@@ -8,6 +8,8 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
 
+// Defines the contract for all emergency record persistence operations.
+// Used by RecordService to decouple business logic from the database.
 public interface RecordDAO {
 
     int add(EmergencyRecord r) throws SQLException, IOException;

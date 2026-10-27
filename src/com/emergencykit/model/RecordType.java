@@ -1,5 +1,7 @@
 package com.emergencykit.model;
 
+// Enumerates the supported categories of emergency records in the system.
+// Used in models, DAO queries, and menus to classify and filter records.
 public enum RecordType {
 
     CONTACT("Emergency Contact"),

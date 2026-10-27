@@ -10,6 +10,8 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Properties;
 
+// Manages loading database configuration and creating JDBC connections.
+// Used by DAO classes and startup checks to connect to the MySQL database.
 public class DBConnection {
 
     private static Properties props = null;

@@ -7,6 +7,8 @@ import com.emergencykit.util.DBConnection;
 import java.io.IOException;
 import java.sql.*;
 
+// Manages database queries for retrieving user credentials and roles.
+// Used by AuthService to authenticate users during login.
 public class UserDAO {
 
     public User findByUsername(String username) throws SQLException, IOException {

@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+// Exports printable records to text files and lists saved files on disk.
+// Used by Main when users choose to save checklists or view exported files.
 public class FileExporter {
 
     private static final String EXPORTS_DIR = "exports";

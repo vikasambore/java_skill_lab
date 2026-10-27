@@ -9,6 +9,8 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+// Implements database CRUD operations for emergency records using JDBC.
+// Used by RecordService to query and persist records in MySQL.
 public class RecordDAOImpl implements RecordDAO {
 
     private EmergencyRecord mapRow(ResultSet rs) throws SQLException {

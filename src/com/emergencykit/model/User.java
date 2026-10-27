@@ -1,5 +1,7 @@
 package com.emergencykit.model;
 
+// Encapsulates user account credentials and assigned system role.
+// Used by UserDAO and AuthService to represent the logged-in user.
 public class User {
 
     private int id;

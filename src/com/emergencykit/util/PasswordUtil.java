@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+// Generates SHA-256 password hashes matching MySQL cryptographic standards.
+// Used by AuthService to hash entered passwords during user login.
 public class PasswordUtil {
 
     public static String hash(String plainPassword) {

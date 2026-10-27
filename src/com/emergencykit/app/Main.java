@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+// Handles the console UI flow and interactive menu navigation.
+// Used as the main application entry point to start the program.
 public class Main {
 
     private static InputHelper input;

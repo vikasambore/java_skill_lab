@@ -15,8 +15,12 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+// Contains business logic, validation rules, and permission checks for records.
+// Used by Main to coordinate CRUD operations between the console UI and DAO layer.
 public class RecordService {
 
+    // Holds counts of successfully imported and skipped records from CSV import.
+    // Returned by RecordService.importContacts to Main for displaying summary.
     public static class ImportResult {
         public int imported;
         public int skipped;

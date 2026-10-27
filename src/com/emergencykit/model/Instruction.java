@@ -2,6 +2,8 @@ package com.emergencykit.model;
 
 import java.time.LocalDate;
 
+// Holds step-by-step procedures to follow during specific emergency scenarios.
+// Used in RecordService and Main for creating and reading emergency instructions.
 public class Instruction extends EmergencyRecord {
 
     public Instruction() {

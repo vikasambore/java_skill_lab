@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+// Wraps standard console input with validation and error-handling prompts.
+// Used throughout Main for safely reading user strings, numbers, and dates.
 public class InputHelper {
 
     private Scanner scanner;

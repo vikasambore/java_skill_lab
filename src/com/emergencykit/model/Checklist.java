@@ -5,6 +5,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+// Represents an emergency preparedness checklist containing ordered items.
+// Used by RecordService, Main, and FileExporter to manage and export tasks.
 public class Checklist extends EmergencyRecord implements Printable {
 
     private List<ChecklistItem> items;

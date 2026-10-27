@@ -2,6 +2,8 @@ package com.emergencykit.model;
 
 import java.time.LocalDate;
 
+// Stores emergency phone numbers and designated personnel roles.
+// Used by RecordService, CsvImporter, and Main for contact operations.
 public class EmergencyContact extends EmergencyRecord {
 
     private String phone;

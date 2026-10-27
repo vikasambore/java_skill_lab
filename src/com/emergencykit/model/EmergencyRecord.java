@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeFormatter;
 
+// Abstract base class providing common attributes and audit fields for all records.
+// Used as the common type across DAO, service, and UI layers for polymorphism.
 public abstract class EmergencyRecord {
 
     public static int STALE_DAYS = 180;

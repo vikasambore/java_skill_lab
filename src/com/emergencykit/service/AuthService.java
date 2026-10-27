@@ -8,6 +8,8 @@ import com.emergencykit.util.PasswordUtil;
 import java.io.IOException;
 import java.sql.SQLException;
 
+// Handles user login authentication, session state, and permission validation.
+// Used by Main and RecordService to verify credentials and enforce admin access.
 public class AuthService {
 
     private User currentUser;
