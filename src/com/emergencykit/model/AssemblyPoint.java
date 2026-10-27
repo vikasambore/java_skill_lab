@@ -2,19 +2,14 @@ package com.emergencykit.model;
 
 import java.time.LocalDate;
 
-// Represents a designated assembly point during an emergency.
-// Extends EmergencyRecord and always has type = ASSEMBLY.
 public class AssemblyPoint extends EmergencyRecord {
 
-    // Detailed directions for reaching this assembly point
     private String locationDescription;
 
-    // Constructor for creating a NEW assembly point
     public AssemblyPoint() {
         super(RecordType.ASSEMBLY);
     }
 
-    // Constructor for loading from the database
     public AssemblyPoint(int id, String title, String description,
                           String locationDescription,
                           String source, LocalDate lastVerified) {
@@ -27,7 +22,6 @@ public class AssemblyPoint extends EmergencyRecord {
         this.locationDescription = locationDescription;
     }
 
-    // Shows the assembly point title, its location details, and footer info
     @Override
     public String display() {
         StringBuilder sb = new StringBuilder();

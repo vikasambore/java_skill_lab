@@ -9,25 +9,18 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-// This class does the actual database work for emergency records.
-// It implements RecordDAO using PreparedStatements (never string concatenation for SQL).
 public class RecordDAOImpl implements RecordDAO {
 
-    // Builds the correct subclass object from a ResultSet row.
-    // This is polymorphism: we check the 'type' column and create the matching class.
     private EmergencyRecord mapRow(ResultSet rs) throws SQLException {
         int id = rs.getInt("id");
         String typeStr = rs.getString("type");
         String title = rs.getString("title");
         String description = rs.getString("description");
         String source = rs.getString("source");
-
-        // Read the date using getObject to avoid timezone issues with java.sql.Date
         LocalDate lastVerified = rs.getObject("last_verified", LocalDate.class);
 
         RecordType type = RecordType.valueOf(typeStr);
 
-        // Create the correct subclass based on the record type
         switch (type) {
             case CONTACT:
                 String phone = rs.getString("phone");
@@ -39,19 +32,16 @@ public class RecordDAOImpl implements RecordDAO {
                 return new AssemblyPoint(id, title, description, locationDesc, source, lastVerified);
 
             case CHECKLIST:
-                // Items are loaded separately after this method returns
                 return new Checklist(id, title, description, source, lastVerified);
 
             case INSTRUCTION:
                 return new Instruction(id, title, description, source, lastVerified);
 
             default:
-                // Should never happen, but safe to handle
                 throw new SQLException("Unknown record type: " + typeStr);
         }
     }
 
-    // Loads checklist items for a given checklist record from the database.
     private void loadChecklistItems(Checklist checklist, Connection conn) throws SQLException {
         String sql = "SELECT id, item_text, item_order FROM checklist_items " +
                      "WHERE record_id = ? ORDER BY item_order";
@@ -74,10 +64,8 @@ public class RecordDAOImpl implements RecordDAO {
                      "location_description, source, last_verified) VALUES (?,?,?,?,?,?,?,?)";
 
         Connection conn = DBConnection.getConnection();
-        // Use try-with-resources to ensure connection is always closed
         try (conn) {
             if (r instanceof Checklist) {
-                // Checklist needs a transaction to insert both the record AND its items
                 conn.setAutoCommit(false);
                 try {
                     int newId = insertRecord(r, conn, sql);
@@ -85,10 +73,10 @@ public class RecordDAOImpl implements RecordDAO {
                     conn.commit();
                     return newId;
                 } catch (SQLException e) {
-                    conn.rollback(); // undo everything if anything fails
+                    conn.rollback();
                     throw e;
                 } finally {
-                    conn.setAutoCommit(true); // always restore auto-commit
+                    conn.setAutoCommit(true);
                 }
             } else {
                 return insertRecord(r, conn, sql);
@@ -96,15 +84,12 @@ public class RecordDAOImpl implements RecordDAO {
         }
     }
 
-    // Helper: inserts one record row and returns the generated ID
     private int insertRecord(EmergencyRecord r, Connection conn, String sql) throws SQLException {
-        // RETURN_GENERATED_KEYS lets us get the auto-incremented ID back
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, r.getType().name());
             ps.setString(2, r.getTitle());
             ps.setString(3, r.getDescription());
 
-            // Type-specific fields (null for types that don't use them)
             if (r instanceof EmergencyContact) {
                 EmergencyContact c = (EmergencyContact) r;
                 ps.setString(4, c.getPhone());
@@ -122,12 +107,10 @@ public class RecordDAOImpl implements RecordDAO {
             }
 
             ps.setString(7, r.getSource());
-            // setObject with LocalDate avoids timezone problems (no java.sql.Date)
             ps.setObject(8, r.getLastVerified());
 
             ps.executeUpdate();
 
-            // Get the newly generated ID
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
                     return keys.getInt(1);
@@ -137,7 +120,6 @@ public class RecordDAOImpl implements RecordDAO {
         throw new SQLException("Failed to get generated key after insert.");
     }
 
-    // Helper: inserts all checklist items for a given checklist record
     private void insertChecklistItems(Checklist checklist, int recordId, Connection conn) throws SQLException {
         String sql = "INSERT INTO checklist_items (record_id, item_text, item_order) VALUES (?,?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -145,7 +127,7 @@ public class RecordDAOImpl implements RecordDAO {
                 ps.setInt(1, recordId);
                 ps.setString(2, item.getItemText());
                 ps.setInt(3, item.getItemOrder());
-                ps.addBatch(); // batch all items for efficiency
+                ps.addBatch();
             }
             ps.executeBatch();
         }
@@ -153,7 +135,6 @@ public class RecordDAOImpl implements RecordDAO {
 
     @Override
     public int[] addAll(List<EmergencyRecord> records) throws SQLException, IOException {
-        // Insert all records in one transaction: all succeed or all fail
         try (Connection conn = DBConnection.getConnection()) {
             conn.setAutoCommit(false);
             try {
@@ -186,12 +167,10 @@ public class RecordDAOImpl implements RecordDAO {
 
         try (Connection conn = DBConnection.getConnection()) {
             if (r instanceof Checklist) {
-                // Updating a checklist also replaces all its items
                 conn.setAutoCommit(false);
                 try {
                     boolean updated = updateRecord(r, conn, sql);
                     if (updated) {
-                        // Delete old items then insert current ones
                         deleteChecklistItems(r.getId(), conn);
                         insertChecklistItems((Checklist) r, r.getId(), conn);
                     }
@@ -234,7 +213,6 @@ public class RecordDAOImpl implements RecordDAO {
             ps.setObject(7, r.getLastVerified());
             ps.setInt(8, r.getId());
 
-            // Returns false if no row was found with that ID
             return ps.executeUpdate() > 0;
         }
     }
@@ -250,7 +228,6 @@ public class RecordDAOImpl implements RecordDAO {
     @Override
     public boolean delete(int id) throws SQLException, IOException {
         String sql = "DELETE FROM records WHERE id = ?";
-        // The ON DELETE CASCADE in the schema handles checklist_items automatically
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -267,7 +244,6 @@ public class RecordDAOImpl implements RecordDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     EmergencyRecord record = mapRow(rs);
-                    // Load items if it's a checklist
                     if (record instanceof Checklist) {
                         loadChecklistItems((Checklist) record, conn);
                     }
@@ -275,7 +251,7 @@ public class RecordDAOImpl implements RecordDAO {
                 }
             }
         }
-        return null; // not found
+        return null;
     }
 
     @Override
@@ -326,18 +302,13 @@ public class RecordDAOImpl implements RecordDAO {
         return searchInternal(keyword, type);
     }
 
-    // Internal search method used by both overloads.
-    // Escapes wildcard characters in the keyword to prevent accidental "match all" queries.
     private List<EmergencyRecord> searchInternal(String keyword, RecordType type) throws SQLException, IOException {
-        // Escape the special LIKE characters so searching for "%" doesn't match everything
-        // We use "!" as the escape character
         String escaped = keyword
-            .replace("!", "!!")   // escape our own escape character first
-            .replace("%", "!%")   // escape percent
-            .replace("_", "!_");  // escape underscore
+            .replace("!", "!!")
+            .replace("%", "!%")
+            .replace("_", "!_");
         String pattern = "%" + escaped + "%";
 
-        // Build the SQL query. We search across many columns.
         StringBuilder sqlBuilder = new StringBuilder(
             "SELECT * FROM records WHERE (" +
             "title LIKE ? ESCAPE '!' OR " +
@@ -350,18 +321,15 @@ public class RecordDAOImpl implements RecordDAO {
             ")"
         );
 
-        // Collect all parameter values in a list so we can bind them in a loop
-        // (avoids hard-coded index numbers which cause bugs when SQL changes)
         List<Object> params = new ArrayList<>();
-        params.add(pattern); // title
-        params.add(pattern); // description
-        params.add(pattern); // source
-        params.add(pattern); // phone
-        params.add(pattern); // contact_role
-        params.add(pattern); // location_description
-        params.add(pattern); // checklist_items subquery
+        params.add(pattern);
+        params.add(pattern);
+        params.add(pattern);
+        params.add(pattern);
+        params.add(pattern);
+        params.add(pattern);
+        params.add(pattern);
 
-        // Optionally filter by type
         if (type != null) {
             sqlBuilder.append(" AND type = ?");
             params.add(type.name());
@@ -373,7 +341,6 @@ public class RecordDAOImpl implements RecordDAO {
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sqlBuilder.toString())) {
 
-            // Bind each parameter using a loop (index starts at 1 in JDBC)
             for (int i = 0; i < params.size(); i++) {
                 ps.setObject(i + 1, params.get(i));
             }

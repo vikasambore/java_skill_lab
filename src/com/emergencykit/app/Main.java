@@ -20,34 +20,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-// Main entry point for the Emergency Information Kit application.
-// This is a console (text menu) application -- no GUI.
 public class Main {
 
-    // Shared instances used throughout the program
     private static InputHelper input;
     private static AuthService authService;
     private static RecordService recordService;
-
-    // Set to true to print full stack traces (useful during development)
     private static final boolean DEBUG = false;
 
     public static void main(String[] args) {
-        // Step 1: Create the one shared InputHelper (and its one Scanner)
         input = new InputHelper();
 
         System.out.println("============================================");
         System.out.println("  Offline Emergency Information Kit");
         System.out.println("============================================");
 
-        // Step 2: Test the database connection before doing anything else
         try {
             DBConnection.testConnection();
             System.out.println("Database connected successfully.");
         } catch (IOException e) {
-            // db.properties is missing or has wrong path
             System.out.println("Configuration error: " + e.getMessage());
-            return; // exit cleanly, no stack trace
+            return;
         } catch (SQLException e) {
             System.out.println("Cannot connect to MySQL. Please check:");
             System.out.println("  - Is MySQL running?");
@@ -57,31 +49,24 @@ public class Main {
             return;
         }
 
-        // Step 3: Set up the service objects
         UserDAO userDAO = new UserDAO();
         authService = new AuthService(userDAO);
 
         RecordDAO recordDAO = new RecordDAOImpl();
         recordService = new RecordService(recordDAO, authService);
 
-        // Step 4: Wrap the entire program in a safety net
-        // The user should NEVER see a Java stack trace.
         try {
-            // Show login screen (3 attempts then exit)
             boolean loggedIn = doLogin();
             if (!loggedIn) {
                 System.out.println("Too many failed attempts. Goodbye.");
                 return;
             }
 
-            // Run the main menu loop
             mainMenuLoop();
 
         } catch (NoSuchElementException e) {
-            // Ctrl+D or Ctrl+Z was pressed (input stream closed)
             System.out.println("\nInput closed. Goodbye.");
         } catch (Exception e) {
-            // Catch-all for any unexpected error
             System.out.println("Something went wrong: " + e.getMessage());
             if (DEBUG) e.printStackTrace();
         }
@@ -89,22 +74,14 @@ public class Main {
         System.out.println("Goodbye!");
     }
 
-    // --- Login Screen ---
-
-    // Shows the login prompt. Allows 3 attempts before giving up.
-    // Returns true if login succeeds, false if all 3 attempts fail.
     private static boolean doLogin() {
         int maxAttempts = 3;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             System.out.println("\n--- Login (" + attempt + "/" + maxAttempts + ") ---");
 
-            // Check if System.console() is available (real terminal, not NetBeans)
-            // If so, we can hide the password. Otherwise it shows as typed.
             String username = input.readRequired("Username: ");
             String password;
 
-            // Note: In NetBeans output window, console() returns null so password is visible.
-            // This is a known limitation stated in the README.
             if (System.console() != null) {
                 char[] pwChars = System.console().readPassword("Password: ");
                 password = new String(pwChars);
@@ -130,9 +107,6 @@ public class Main {
         return false;
     }
 
-    // --- Main Menu ---
-
-    // Main menu options stored in a String array (as required by the spec)
     private static final String[] MAIN_MENU = {
         "1. Search records",
         "2. Browse by category",
@@ -167,7 +141,7 @@ public class Main {
                     case 8: doAdminMenu(); break;
                     case 9:
                         authService.logout();
-                        return; // exit the loop
+                        return;
                     default:
                         System.out.println("Invalid choice. Please try again.");
                 }
@@ -184,22 +158,16 @@ public class Main {
                 System.out.println("File error: " + e.getMessage());
                 if (DEBUG) e.printStackTrace();
             } catch (NoSuchElementException e) {
-                // Ctrl+D or Ctrl+Z -- let it propagate to main's handler
                 throw e;
             } catch (Exception e) {
-                // Safety net: unknown error
                 System.out.println("Something went wrong: " + e.getMessage());
                 if (DEBUG) e.printStackTrace();
             }
         }
     }
 
-    // --- Option 1: Search ---
-
     private static void doSearch() throws SQLException, IOException, InvalidDataException {
         String keyword = input.readRequired("Enter search keyword: ");
-
-        // Ask if they want to filter by type
         RecordType filterType = askTypeFilter();
 
         List<EmergencyRecord> results;
@@ -212,16 +180,13 @@ public class Main {
         printRecordList(results, "search results");
     }
 
-    // Asks the user to optionally pick a record type filter.
-    // Returns the chosen RecordType, or null for "all types".
-    // Keeps asking until valid input is given (never silently falls back).
     private static RecordType askTypeFilter() {
         System.out.println("Filter by type?");
         System.out.println("  1) Contact   2) Assembly   3) Checklist   4) Instruction   (Enter = all types)");
 
         while (true) {
             String input2 = input.readLine("Choice: ");
-            if (input2.isEmpty()) return null; // Enter = all types
+            if (input2.isEmpty()) return null;
 
             switch (input2) {
                 case "1": return RecordType.CONTACT;
@@ -233,8 +198,6 @@ public class Main {
             }
         }
     }
-
-    // --- Option 2: Browse by category ---
 
     private static void doBrowseByCategory() throws SQLException, IOException {
         System.out.println("Browse by category:");
@@ -260,8 +223,6 @@ public class Main {
         printRecordList(records, type.label() + " records");
     }
 
-    // --- Option 3: View all (grouped by type) ---
-
     private static void doViewAll() throws SQLException, IOException {
         Map<RecordType, List<EmergencyRecord>> grouped = recordService.groupByType();
 
@@ -271,16 +232,13 @@ public class Main {
         }
 
         System.out.println("\n========== ALL RECORDS ==========");
-        // EnumMap preserves enum order: CONTACT -> ASSEMBLY -> CHECKLIST -> INSTRUCTION
         for (Map.Entry<RecordType, List<EmergencyRecord>> entry : grouped.entrySet()) {
             System.out.println("\n--- " + entry.getKey().label() + " ---");
             for (EmergencyRecord r : entry.getValue()) {
-                System.out.println(r); // uses toString() for one-line summary
+                System.out.println(r);
             }
         }
     }
-
-    // --- Option 4: Stale records report ---
 
     private static void doStaleReport() throws SQLException, IOException {
         List<EmergencyRecord> stale = recordService.getStaleRecords();
@@ -300,30 +258,20 @@ public class Main {
         }
     }
 
-    // --- Option 5: View a record in full ---
-
     private static void doViewById() throws SQLException, IOException, RecordNotFoundException {
         int id = input.readInt("Enter record ID: ", 1, Integer.MAX_VALUE);
         EmergencyRecord record = recordService.getById(id);
         System.out.println("\n" + record.display());
     }
 
-    // --- Option 6: Export a checklist ---
-
     private static void doExportChecklist()
             throws SQLException, IOException, RecordNotFoundException, InvalidDataException {
         int id = input.readInt("Enter checklist ID to export: ", 1, Integer.MAX_VALUE);
-
-        // getChecklist throws InvalidDataException if the record isn't a checklist
         Checklist checklist = recordService.getChecklist(id);
 
         Path exported = FileExporter.exportChecklist(checklist);
         System.out.println("Exported to: " + exported.toAbsolutePath());
     }
-
-    // --- Option 7: View an exported file ---
-    // Security: we never accept a file path from the user here.
-    // We list files by number so they can't type "../db.properties" to see the password.
 
     private static void doViewExportedFile() throws IOException {
         List<Path> exports = FileExporter.listExports();
@@ -344,8 +292,6 @@ public class Main {
         System.out.println("\n" + FileExporter.readFile(chosen));
     }
 
-    // --- Option 8: Admin Menu ---
-
     private static final String[] ADMIN_MENU = {
         "1. Add record",
         "2. Update record",
@@ -359,8 +305,6 @@ public class Main {
             throws SQLException, IOException, UnauthorizedException,
                    RecordNotFoundException, InvalidDataException {
 
-        // Check admin permission at the start of the menu.
-        // A viewer who selects "Admin menu" will see this message -- intentional.
         authService.requireAdmin();
 
         while (true) {
@@ -379,7 +323,7 @@ public class Main {
                     case 3: doDeleteRecord(); break;
                     case 4: doReVerify(); break;
                     case 5: doImportCsv(); break;
-                    case 6: return; // back to main menu
+                    case 6: return;
                     default:
                         System.out.println("Invalid choice. Please try again.");
                 }
@@ -404,8 +348,6 @@ public class Main {
         }
     }
 
-    // --- Admin: Add Record ---
-
     private static void doAddRecord()
             throws SQLException, IOException, UnauthorizedException, InvalidDataException {
         System.out.println("\n-- Add Record --");
@@ -428,8 +370,6 @@ public class Main {
         System.out.println("Record added successfully with ID: " + newId);
     }
 
-    // Builds an EmergencyContact by prompting the user.
-    // If 'existing' is non-null, pressing Enter keeps the existing value.
     private static EmergencyContact buildContact(EmergencyContact existing) {
         EmergencyContact contact = (existing != null) ? existing : new EmergencyContact();
 
@@ -494,21 +434,18 @@ public class Main {
         checklist.setLastVerified(date);
 
         if (existing == null) {
-            // New checklist: prompt for items
             System.out.println("Enter checklist items (one per line, blank line to finish):");
             List<String> items = input.readMultiLine("");
             for (String item : items) {
                 checklist.addItem(item);
             }
         } else {
-            // Updating: show a sub-menu for items
             doChecklistItemsMenu(checklist);
         }
 
         return checklist;
     }
 
-    // Sub-menu for managing checklist items during an update
     private static void doChecklistItemsMenu(Checklist checklist) {
         System.out.println("\nChecklist items sub-menu:");
         System.out.println("  1. Keep items as they are");
@@ -520,11 +457,9 @@ public class Main {
 
         switch (choice) {
             case 1:
-                // Do nothing -- keep existing items
                 break;
 
             case 2:
-                // Clear all items and re-enter
                 checklist.clearItems();
                 System.out.println("Enter new items (blank line to finish):");
                 List<String> newItems = input.readMultiLine("");
@@ -534,14 +469,12 @@ public class Main {
                 break;
 
             case 3:
-                // Add one new item
                 String newItem = input.readRequired("New item text: ");
                 checklist.addItem(newItem);
                 System.out.println("Item added.");
                 break;
 
             case 4:
-                // Remove one item by number
                 if (checklist.getItems().isEmpty()) {
                     System.out.println("No items to remove.");
                 } else {
@@ -550,7 +483,7 @@ public class Main {
                         System.out.println("  " + (i + 1) + ". " + checklist.getItems().get(i).getItemText());
                     }
                     int itemNum = input.readInt("Enter item number to remove: ", 1, checklist.getItems().size());
-                    checklist.removeItem(itemNum - 1); // convert to 0-based index
+                    checklist.removeItem(itemNum - 1);
                     System.out.println("Item removed.");
                 }
                 break;
@@ -569,20 +502,16 @@ public class Main {
         String source = promptField("Source/authority", existing != null ? existing.getSource() : null, true);
         if (!source.isEmpty()) instruction.setSource(source);
 
-        // For instructions, description holds the steps
         if (existing == null) {
             System.out.println("Enter steps one per line (blank line to finish):");
             List<String> steps = input.readMultiLine("");
             instruction.setDescription(String.join("\n", steps));
         } else {
-            // Show current steps, let user re-enter or keep
             System.out.println("Current steps:\n" + existing.getDescription());
             System.out.println("Enter new steps (blank line to finish), or just press Enter to keep existing:");
             String firstLine = input.readOptional("First step (or Enter to keep): ");
             if (firstLine.isEmpty()) {
-                // Keep existing steps
             } else {
-                // User entered something: collect all steps
                 List<String> steps = new ArrayList<>();
                 steps.add(firstLine);
                 List<String> more = input.readMultiLine("Continue entering steps (blank to finish):");
@@ -598,13 +527,11 @@ public class Main {
         return instruction;
     }
 
-    // Helper: prompts for a field value.
-    // If existing != null, shows the current value and lets user press Enter to keep it.
     private static String promptField(String label, String existing, boolean required) {
         if (existing != null) {
             System.out.println("  Current " + label + ": " + existing);
             String val = input.readOptional("  New " + label + " (Enter to keep): ");
-            return val; // empty means "keep old value"
+            return val;
         } else {
             if (required) {
                 return input.readRequired(label + ": ");
@@ -613,8 +540,6 @@ public class Main {
             }
         }
     }
-
-    // --- Admin: Update Record ---
 
     private static void doUpdateRecord()
             throws SQLException, IOException, UnauthorizedException,
@@ -644,26 +569,19 @@ public class Main {
                 return;
         }
 
-        // Updating does NOT automatically change last_verified.
-        // Ask separately whether to mark as re-verified today.
         boolean markVerified = input.readYesNo("Mark as re-verified today? (y/n): ");
         if (markVerified) {
             updated.setLastVerified(LocalDate.now());
-        } else {
-            // Keep the original date (it was not modified in buildXxx)
         }
 
         recordService.updateRecord(updated);
         System.out.println("Record updated successfully.");
     }
 
-    // --- Admin: Delete Record ---
-
     private static void doDeleteRecord()
             throws SQLException, IOException, UnauthorizedException, RecordNotFoundException {
         int id = input.readInt("Enter record ID to delete: ", 1, Integer.MAX_VALUE);
 
-        // Show what will be deleted so the user can confirm
         EmergencyRecord record = recordService.getById(id);
         System.out.println("About to delete: " + record);
 
@@ -677,16 +595,12 @@ public class Main {
         System.out.println("Record deleted.");
     }
 
-    // --- Admin: Re-verify ---
-
     private static void doReVerify()
             throws SQLException, IOException, UnauthorizedException, RecordNotFoundException {
         int id = input.readInt("Enter record ID to mark as re-verified: ", 1, Integer.MAX_VALUE);
         recordService.markVerified(id);
         System.out.println("Record " + id + " marked as verified today (" + DateUtil.format(LocalDate.now()) + ").");
     }
-
-    // --- Admin: Import CSV ---
 
     private static void doImportCsv()
             throws SQLException, IOException, UnauthorizedException, InvalidDataException {
@@ -700,10 +614,6 @@ public class Main {
         System.out.println("Import complete: " + result.imported + " imported, " + result.skipped + " duplicate(s) skipped.");
     }
 
-    // --- Display helpers ---
-
-    // Prints a list of records in the one-line summary format.
-    // Shows the result count and "No matching records found." if empty.
     private static void printRecordList(List<EmergencyRecord> records, String context) {
         System.out.println("\n--- " + context + " ---");
         if (records.isEmpty()) {

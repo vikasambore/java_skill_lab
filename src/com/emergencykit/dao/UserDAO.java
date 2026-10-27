@@ -7,11 +7,8 @@ import com.emergencykit.util.DBConnection;
 import java.io.IOException;
 import java.sql.*;
 
-// Handles database operations for users (login lookup).
 public class UserDAO {
 
-    // Finds a user by their username. Returns null if the username doesn't exist.
-    // Used by AuthService during login to look up the stored password hash.
     public User findByUsername(String username) throws SQLException, IOException {
         String sql = "SELECT id, username, password_hash, role FROM users WHERE username = ?";
         try (Connection conn = DBConnection.getConnection();
@@ -22,16 +19,14 @@ public class UserDAO {
                     int id = rs.getInt("id");
                     String uname = rs.getString("username");
                     String hash = rs.getString("password_hash");
-                    Role role = Role.valueOf(rs.getString("role")); // convert DB string to enum
+                    Role role = Role.valueOf(rs.getString("role"));
                     return new User(id, uname, hash, role);
                 }
             }
         }
-        return null; // username not found
+        return null;
     }
 
-    // Adds a new user to the database.
-    // Returns the auto-generated id.
     public int add(User u) throws SQLException, IOException {
         String sql = "INSERT INTO users (username, password_hash, role) VALUES (?,?,?)";
         try (Connection conn = DBConnection.getConnection();

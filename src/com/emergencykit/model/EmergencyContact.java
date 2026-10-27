@@ -2,20 +2,15 @@ package com.emergencykit.model;
 
 import java.time.LocalDate;
 
-// Represents an emergency contact (phone number + role).
-// Extends EmergencyRecord and always has type = CONTACT.
 public class EmergencyContact extends EmergencyRecord {
 
-    private String phone;       // e.g. "0120-2345678"
-    private String contactRole; // e.g. "Chief Security Officer"
+    private String phone;
+    private String contactRole;
 
-    // Constructor for creating a NEW contact (no ID yet)
     public EmergencyContact() {
-        // Always pass CONTACT type to the parent
         super(RecordType.CONTACT);
     }
 
-    // Constructor for loading from the database
     public EmergencyContact(int id, String title, String description,
                              String phone, String contactRole,
                              String source, LocalDate lastVerified) {
@@ -24,14 +19,12 @@ public class EmergencyContact extends EmergencyRecord {
         this.contactRole = contactRole;
     }
 
-    // Getters and setters
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
 
     public String getContactRole() { return contactRole; }
     public void setContactRole(String contactRole) { this.contactRole = contactRole; }
 
-    // Provides a nicely formatted multi-line view of this contact
     @Override
     public String display() {
         StringBuilder sb = new StringBuilder();
