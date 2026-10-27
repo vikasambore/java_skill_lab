@@ -1,3 +1,5 @@
 db.properties
 exports/
 *.class
+/skill_lab_el/nbproject/private/
+/skill_lab_el/build/
